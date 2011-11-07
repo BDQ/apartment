@@ -1,13 +1,11 @@
 require 'active_support/core_ext/module/delegation'
 
 module Apartment
-  
   #   The main entry point to Apartment functions
 	module Database
-	  
 	  extend self
 
-    delegate :create, :current_database, :process, :process_excluded_models, :reset, :seed, :switch, :to => :adapter
+    delegate :create, :process, :process_excluded_models, :reset, :seed, :switch, :to => :adapter
 
     #   Initialize Apartment config options such as excluded_models
     # 
@@ -43,7 +41,20 @@ module Apartment
       @adapter = nil
       @config = nil
     end
-    
+
+    def current_pool_klass
+      return nil unless current_database
+      current_database.underscore.classify.constantize
+    end
+
+    def current_database
+      Rails.application.config.current_database rescue nil
+    end
+
+    def current_database=(val)
+       Rails.application.config.current_database = val
+    end
+
 	private
 	
     #   Fetch the rails database configuration

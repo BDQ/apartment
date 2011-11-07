@@ -1,7 +1,10 @@
-require 'apartment/railtie' if defined?(Rails)
+if defined?(Rails)
+  require 'apartment/railtie'
+  require 'apartment/connection_handler_extension'
+end
+
 
 module Apartment
-  
   class << self
     attr_accessor :use_postgres_schemas, :seed_after_create, :prepend_environment
     attr_writer :database_names, :excluded_models

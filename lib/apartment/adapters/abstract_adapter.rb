@@ -5,7 +5,6 @@ module Apartment
   module Adapters
   
     class AbstractAdapter
-      
       #   @constructor
       #   @param {Hash} config Database config
       #   @param {Hash} defaults Some default options
@@ -34,10 +33,7 @@ module Apartment
       #   
       #   @return {String} current database name
       # 
-      def current_database
-        ActiveRecord::Base.connection.current_database
-      end
-      
+
       #   Drop the database
       # 
       #   @param {String} database Database name
@@ -64,7 +60,7 @@ module Apartment
       #   @param {String?} database Database or schema to connect to
       # 
       def process(database = nil)
-        current_db = current_database
+        current_db = Apartment::Database.current_database
 		    switch(database)
 		    yield if block_given?
 		    
@@ -130,8 +126,20 @@ module Apartment
       #   @param {String} database Database name
       # 
       def connect_to_new(database)
-        ActiveRecord::Base.establish_connection multi_tenantify(database)
-        ActiveRecord::Base.connection.active?   # call active? to manually check if this connection is valid
+        Apartment::Database.current_database = database
+
+        klass_name = database.underscore.classify
+
+        # define class for each database so we get connection pool usage
+        unless (Module.const_get(klass_name) rescue false)
+          klass = Class.new(ActiveRecord::Base) 
+          Object.const_set klass_name, klass 
+
+          # only establish connection once
+          klass_name.constantize.send :establish_connection, multi_tenantify(database)
+          klass_name.constantize.send(:connection).send(:active?) # call active? to manually check if this connection is valid
+        end
+
 
       rescue ActiveRecord::StatementInvalid => e
         raise DatabaseNotFound, "The database #{environmentify(database)} cannot be found."
